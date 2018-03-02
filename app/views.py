@@ -26,27 +26,39 @@ def home():
 def about():
     """Render the website's about page."""
     return render_template('about.html')
+    
+@app.route('/secure-page')
+@login_required
+def secure_page():
+    """Render a secure page on our website that only logged in users can access."""
+    return render_template('secure_page.html')
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm()
-    if request.method == "POST":
+    if request.method == "POST" and form.validate_on_submit():
         # change this to actually validate the entire form submission
         # and not just one field
-        if form.username.data:
+        if form.username.data and form.password.data:
             # Get the username and password values from the form.
-
+            username = form.username.data
+            password = form.password.data
+            user = UserProfile.query.filter_by(username = username, password = password).first()
             # using your model, query database for a user based on the username
             # and password submitted
             # store the result of that query to a `user` variable so it can be
             # passed to the login_user() method.
 
             # get user id, load into session
-            login_user(user)
-
+            if user is not None:
+                login_user(user)
+                flash('Successful Login', 'success')
+                next = request.args.get('next')
+                return redirect(url_for('secure_page'))
+            else:
+                flash('Login information correct. Check again ', 'danger')
             # remember to flash a message to the user
-            return redirect(url_for("home"))  # they should be redirected to a secure-page route instead
     return render_template("login.html", form=form)
 
 
